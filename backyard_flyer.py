@@ -62,12 +62,14 @@ class BackyardFlyer(Drone):
         This method is completed
 
         This triggers when `MsgID.LOCAL_VELOCITY` is received and self.local_velocity contains new data
-        """
+       
         
         if self.flight_state == States.LANDING:     # if we are landing monitor position to switch to disarming once completed
             if self.global_position[2] - self.global_home[2] < 0.1:
                 if abs(self.local_position[2]) < 0.01:
                     self.disarming_transition()
+        """
+        pass
 
     def state_callback(self):
         if DEBUG: 
@@ -81,13 +83,17 @@ class BackyardFlyer(Drone):
         # check if we are in mission state we want to control the drone
         if self.in_mission:
             if self.flight_state == States.MANUAL:
-                self.arming_transition()
+                if self.guided:
+                    self.flight_state = States.ARMING
             elif self.flight_state == States.ARMING:
                 if self.armed:
                     self.takeoff_transition()
-            elif self.flight_state == States.DISARMING:
+            elif self.flight_state == States.LANDING:
                 if ~self.armed & ~self.guided:
-                    self.manual_transition()
+                    self.stop()
+                    self.in_mission = False
+            elif self.flight_state == States.DISARMING:
+                pass
                     
     def calculate_box(self):
         if DEBUG: 
