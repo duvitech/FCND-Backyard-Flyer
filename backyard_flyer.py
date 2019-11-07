@@ -8,6 +8,7 @@ from udacidrone import Drone
 from udacidrone.connection import MavlinkConnection, WebSocketConnection  # noqa: F401
 from udacidrone.messaging import MsgID
 
+DEBUG = True
 
 class States(Enum):
     MANUAL = 0
@@ -22,6 +23,8 @@ class BackyardFlyer(Drone):
 
     def __init__(self, connection):
         super().__init__(connection)
+        if DEBUG: 
+            print("INITIALIZE")
         self.target_position = np.array([0.0, 0.0, 0.0])
         self.all_waypoints = []
         self.in_mission = True
@@ -36,14 +39,24 @@ class BackyardFlyer(Drone):
         self.register_callback(MsgID.STATE, self.state_callback)
 
     def local_position_callback(self):
-        """
-        TODO: Implement this method
+        if DEBUG: 
+            print("local_position_callback")
 
-        This triggers when `MsgID.LOCAL_POSITION` is received and self.local_position contains new data
-        """
-        pass
+        if self.flight_state == States.TAKEOFF: # if in takeoff state set the waypoints
+            if -1.0 * self.local_position[2] > 0.95 * self.target_position[2]:
+                self.all_waypoints = self.calculate_box()  # set the way points as soon as we leave the groung
+                self.waypoint_transition() # make waypoint transition
+        elif self.flight_state == States.WAYPOINT:
+            if np.linalg.norm(self.target_position[0:2]-self.local_position[0:2]) < 1.0:
+                if len(self.all_waypoints) > 0:
+                    self.waypoint_transition()
+                else:
+                    if np.linalg.norm(self.local_velocity[0:2]) < 1.0: # no more waypoints and we have reached our destination land it
+                        self.landing_transition()
 
     def velocity_callback(self):
+        if DEBUG: 
+            print("velocity_callback")
         """
         TODO: Implement this method
 
@@ -52,21 +65,37 @@ class BackyardFlyer(Drone):
         pass
 
     def state_callback(self):
+        if DEBUG: 
+            print("state_callback")
         """
         TODO: Implement this method
 
         This triggers when `MsgID.STATE` is received and self.armed and self.guided contain new data
         """
-        pass
-
+        # check if we are in mission state we want to control the drone
+        if self.in_mission:
+            if self.flight_state == States.MANUAL:
+                self.arming_transition()
+            elif self.flight_state == States.ARMING:
+                if self.armed:
+                    self.takeoff_transition()
+            elif self.flight_state == States.DISARMING:
+                if ~self.armed & ~self.guided:
+                    self.manual_transition()
+                    
     def calculate_box(self):
-        """TODO: Fill out this method
+        if DEBUG: 
+            print("calculate_box")
+        """This method is completed
         
         1. Return waypoints to fly a box
         """
-        pass
+        local_waypoints = [[10.0, 0.0, 3.0], [10.0, 10.0, 3.0], [0.0, 10.0, 3.0], [0.0, 0.0, 3.0]]
+        return local_waypoints
 
     def arming_transition(self):
+        if DEBUG: 
+            print("arming_transition")
         """TODO: Fill out this method
         
         1. Take control of the drone
@@ -77,6 +106,8 @@ class BackyardFlyer(Drone):
         print("arming transition")
 
     def takeoff_transition(self):
+        if DEBUG: 
+            print("takeoff_transition")
         """TODO: Fill out this method
         
         1. Set target_position altitude to 3.0m
@@ -86,6 +117,8 @@ class BackyardFlyer(Drone):
         print("takeoff transition")
 
     def waypoint_transition(self):
+        if DEBUG: 
+            print("waypoint_transition")
         """TODO: Fill out this method
     
         1. Command the next waypoint position
@@ -94,22 +127,36 @@ class BackyardFlyer(Drone):
         print("waypoint transition")
 
     def landing_transition(self):
-        """TODO: Fill out this method
+        if DEBUG: 
+            print("landing_transition")
+        """This method is completed
         
         1. Command the drone to land
         2. Transition to the LANDING state
         """
         print("landing transition")
+        self.land()
+        self.flight_state = States.LANDING
 
     def disarming_transition(self):
-        """TODO: Fill out this method
+        if DEBUG: 
+            print("disarming_transition")
+            
+        """This method is completed
         
-        1. Command the drone to disarm
-        2. Transition to the DISARMING state
+        1. Disarm drone
+        2. Release control of the drone
+        3. Transition to the DISARMING state
         """
+
         print("disarm transition")
+        self.disarm()
+        self.release_control()
+        self.flight_state = States.DISARMING
 
     def manual_transition(self):
+        if DEBUG: 
+            print("manual_transition")
         """This method is provided
         
         1. Release control of the drone
@@ -125,6 +172,8 @@ class BackyardFlyer(Drone):
         self.flight_state = States.MANUAL
 
     def start(self):
+        if DEBUG: 
+            print("start")
         """This method is provided
         
         1. Open a log file
@@ -135,6 +184,7 @@ class BackyardFlyer(Drone):
         self.start_log("Logs", "NavLog.txt")
         print("starting connection")
         self.connection.start()
+
         print("Closing log file")
         self.stop_log()
 
