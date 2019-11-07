@@ -57,16 +57,22 @@ class BackyardFlyer(Drone):
     def velocity_callback(self):
         if DEBUG: 
             print("velocity_callback")
+
         """
-        TODO: Implement this method
+        This method is completed
 
         This triggers when `MsgID.LOCAL_VELOCITY` is received and self.local_velocity contains new data
         """
-        pass
+        
+        if self.flight_state == States.LANDING:     # if we are landing monitor position to switch to disarming once completed
+            if self.global_position[2] - self.global_home[2] < 0.1:
+                if abs(self.local_position[2]) < 0.01:
+                    self.disarming_transition()
 
     def state_callback(self):
         if DEBUG: 
             print("state_callback")
+        
         """
         TODO: Implement this method
 
@@ -94,37 +100,47 @@ class BackyardFlyer(Drone):
         return local_waypoints
 
     def arming_transition(self):
-        if DEBUG: 
-            print("arming_transition")
-        """TODO: Fill out this method
+        print("arming_transition")
+        """This method is completed
         
         1. Take control of the drone
         2. Pass an arming command
         3. Set the home location to current position
         4. Transition to the ARMING state
         """
-        print("arming transition")
+        
+        self.take_control()
+        self.arm()
+        self.set_home_position(self.global_position[0], self.global_position[1],
+                               self.global_position[2]) 
+        self.flight_state = States.ARMING
 
     def takeoff_transition(self):
-        if DEBUG: 
-            print("takeoff_transition")
-        """TODO: Fill out this method
+        print("takeoff transition")
+        """This method is completed
         
         1. Set target_position altitude to 3.0m
         2. Command a takeoff to 3.0m
         3. Transition to the TAKEOFF state
         """
-        print("takeoff transition")
+        target_altitude = 3.0
+        self.target_position[2] = target_altitude
+        self.takeoff(target_altitude)
+        self.flight_state = States.TAKEOFF
 
     def waypoint_transition(self):
-        if DEBUG: 
-            print("waypoint_transition")
-        """TODO: Fill out this method
+        print("waypoint_transition")
+        
+        """This method is completed
     
         1. Command the next waypoint position
         2. Transition to WAYPOINT state
         """
-        print("waypoint transition")
+        
+        self.target_position = self.all_waypoints.pop(0)   # get next waypoint        
+        print('target position', self.target_position)     # print next position
+        self.cmd_position(self.target_position[0], self.target_position[1], self.target_position[2], 0.0) # send command
+        self.flight_state = States.WAYPOINT # set the state
 
     def landing_transition(self):
         if DEBUG: 
