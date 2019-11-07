@@ -102,10 +102,12 @@ class BackyardFlyer(Drone):
         
         1. Return waypoints to fly a box
         """
-        local_waypoints = [[5.0, 0.0, 3.0], [10.0, 0.0, 3.0], [15.0, 0.0, 3.0], 
-                           [15.0, 5.0, 3.0], [15.0, 10.0, 3.0], [15.0, 15.0, 3.0], 
-                           [10.0, 15.0, 3.0],  [5.0, 15.0, 3.0],  [0.0, 15.0, 3.0], 
-                           [0.0, 10.0, 3.0], [0.0, 5.0, 3.0],  [0.0, 0.0, 3.0]]
+        cp = np.array([self.local_position[0], self.local_position[1], -self.local_position[2]])  # get the current local position -> note we need to change the sign of the down coordinate to be altitude
+    
+        local_waypoints = [cp + [5.0, 0.0, 3.0], cp + [10.0, 0.0, 3.0], cp + [15.0, 0.0, 3.0], 
+                           cp + [15.0, 5.0, 3.0], cp + [15.0, 10.0, 3.0], cp + [15.0, 15.0, 3.0], 
+                           cp + [10.0, 15.0, 3.0], cp + [5.0, 15.0, 3.0], cp + [0.0, 15.0, 3.0], 
+                           cp + [0.0, 10.0, 3.0], cp + [0.0, 5.0, 3.0], cp + [0.0, 0.0, 3.0]]
 
         return local_waypoints
 
